@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Морська погода в Одесі</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f8ff;
+    }
+    h1 {
+      color: #1e3f66;
+    }
+    canvas {
+      margin: 20px 0;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Температура моря та висота хвиль в Одесі</h1>
+  <canvas id="tempChart" width="800" height="300"></canvas>
+  <canvas id="waveChart" width="800" height="300"></canvas>
+
+  <script>
+    const apiUrl = "https://marine-api.open-meteo.com/v1/marine?latitude=46.4825&longitude=30.7233&hourly=wave_height,sea_surface_temperature&timezone=auto";
+
+    fetch(apiUrl)
+      .then(res => res.json())
+      .then(data => {
+        const timeLabels = data.hourly.time.map(ts => {
+          const date = new Date(ts);
+          return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth()+1).toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:00`;
+        });
+
+        const temps = data.hourly.sea_surface_temperature;
+        const waves = data.hourly.wave_height;
+
+        const chartOptions = (label, color, dataSet) => ({
+          type: 'line',
+          data: {
+            labels: timeLabels,
+            datasets: [{
+              label,
+              data: dataSet,
+              fill: false,
+              borderColor: color,
+              tension: 0.1
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: {
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 12  // Зменшує кількість підписів на осі X
+                },
+                title: {
+                  display: true,
+                  text: 'Дата і час'
+                }
+              },
+              y: {
+                beginAtZero: false
+              }
+            }
+          }
+        });
+
+        new Chart(document.getElementById('tempChart').getContext('2d'), 
+          chartOptions('Температура моря (°C)', 'rgb(255, 99, 132)', temps)
+        );
+
+        new Chart(document.getElementById('waveChart').getContext('2d'), 
+          chartOptions('Висота хвиль (м)', 'rgb(54, 162, 235)', waves)
+        );
+      })
+      .catch(err => {
+        console.error("Помилка при завантаженні даних:", err);
+        document.body.innerHTML += "<p>Не вдалося завантажити дані з API.</p>";
+      });
+  </script>
+</body>
+</html>
